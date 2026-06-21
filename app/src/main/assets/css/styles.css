@@ -431,9 +431,7 @@ body {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    display: flex;
-    align-items: center;
-    gap: 6px;
+    display: block;
 }
 
 .account-pass {
@@ -442,6 +440,18 @@ body {
     letter-spacing: 2px;
     margin-top: 2px;
     font-family: 'Courier New', monospace;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* When hovering the details container, expand children to their intrinsic width so
+   the container can scroll horizontally to reveal the full text. */
+.account-details:hover .account-user,
+.account-details:hover .account-pass {
+    min-width: max-content;
+    overflow: visible;
 }
 
 .account-pass.vis {
@@ -452,6 +462,21 @@ body {
     display: flex;
     gap: 4px;
     flex-shrink: 0;
+}
+
+/* Allow horizontal sliding to reveal full username/password when overflowing. */
+.account-details {
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+}
+.account-details:hover {
+    overflow-x: auto;
+}
+
+/* Ensure tag pills don't wrap awkwardly and get a small gap from username */
+.account-user .tag-pill {
+    margin-left: 6px;
+    display: inline-block;
 }
 
 .btn-sm {

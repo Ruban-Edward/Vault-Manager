@@ -1,5 +1,6 @@
 // ── DATA ──────────────────────────────────────────────────────────────────────
 const CATEGORIES = [
+    { id: 'personal', label: 'Personal', color: '#534AB7', bg: '#EEEDFE' },
     { id: 'social', label: 'Social', color: '#534AB7', bg: '#EEEDFE' },
     { id: 'finance', label: 'Finance', color: '#0F6E56', bg: '#E1F5EE' },
     { id: 'work', label: 'Work', color: '#185FA5', bg: '#E6F1FB' },
@@ -645,7 +646,7 @@ async function initializeApp() {
     load();
     applyTheme();
     applyEncryptToggle();
-    
+
     // Check if this is the first time - no PIN set and no vault data
     if (userPin === '1234' && Object.keys(vault).length === 0) {
         isFirstTime = true;
