@@ -4,6 +4,7 @@ const CATEGORIES = [
     { id: 'social', label: 'Social', color: '#534AB7', bg: '#EEEDFE' },
     { id: 'finance', label: 'Finance', color: '#0F6E56', bg: '#E1F5EE' },
     { id: 'work', label: 'Work', color: '#185FA5', bg: '#E6F1FB' },
+    { id: 'games', label: 'Games', color: '#185FA5', bg: '#E6F1FB' },
     { id: 'shopping', label: 'Shopping', color: '#993C1D', bg: '#FAECE7' },
     { id: 'other', label: 'Other', color: '#5F5E5A', bg: '#F1EFE8' },
 ];
@@ -23,6 +24,7 @@ let selectedCat = null;
 let activeFilter = 'all';
 let pinEnabled = true;
 let bioEnabled = false;
+let unlockPref = 'ask'; // 'ask' | 'pin' | 'bio' - preference for opening behavior
 let userPin = '1234';
 let pinInput = '';
 let cpinInput = '';
@@ -76,7 +78,7 @@ async function loadPinFromDB() {
 function save() {
     try {
         // save settings/meta always
-        const meta = { userPin, pinEnabled, bioEnabled, theme, encryptionEnabled };
+        const meta = { userPin, pinEnabled, bioEnabled, unlockPref, theme, encryptionEnabled };
         localStorage.setItem('vault_data', JSON.stringify(meta));
         // also save PIN to IndexedDB for better persistence on mobile
         savePinToDB(userPin);
@@ -108,6 +110,7 @@ function load() {
         if (d.userPin) userPin = d.userPin;
         if (typeof d.pinEnabled !== 'undefined') pinEnabled = d.pinEnabled;
         if (typeof d.bioEnabled !== 'undefined') bioEnabled = d.bioEnabled;
+        if (d.unlockPref) unlockPref = d.unlockPref;
         if (d.theme) theme = d.theme;
         if (typeof d.encryptionEnabled !== 'undefined') encryptionEnabled = d.encryptionEnabled;
 
@@ -149,6 +152,24 @@ function applyEncryptToggle() {
     const btn = document.getElementById('toggle-encrypt');
     if (!btn) return;
     btn.classList.toggle('on', encryptionEnabled);
+}
+
+function applyUnlockPrefUI() {
+    const sel = document.getElementById('unlock-pref');
+    if (!sel) return;
+    sel.value = unlockPref || 'ask';
+}
+
+function applyPinToggle() {
+    const btn = document.getElementById('toggle-pin');
+    if (!btn) return;
+    btn.classList.toggle('on', !!pinEnabled);
+}
+
+function applyBioToggle() {
+    const btn = document.getElementById('toggle-bio');
+    if (!btn) return;
+    btn.classList.toggle('on', !!bioEnabled);
 }
 
 // --- Crypto helpers ---
@@ -304,6 +325,61 @@ function toggleBio() {
     bioEnabled = !bioEnabled;
     document.getElementById('toggle-bio').classList.toggle('on', bioEnabled);
     save(); showToast(bioEnabled ? 'Biometric enabled' : 'Biometric disabled');
+}
+
+function setUnlockPref(val) {
+    unlockPref = val || 'ask';
+    applyUnlockPrefUI();
+    save();
+    showToast(unlockPref === 'bio' ? 'Default unlock: Biometric' : (unlockPref === 'pin' ? 'Default unlock: PIN' : 'Default unlock: Ask'));
+}
+
+// Attempt biometric authentication. Tries Android bridge first, falls back to WebAuthn when available.
+function tryBiometricAuth() {
+    return new Promise(async (resolve, reject) => {
+        // Android bridge (common name: Android)
+        try {
+            if (window.Android && typeof window.Android.authenticateBiometric === 'function') {
+                // Wait for callback from native
+                window.onBiometricResult = function (r) {
+                    if (r === true || r === 'true' || r === 'OK') {
+                        resolve('SUCCESS');
+                    } else if (r === 'NEGATIVE') {
+                        resolve('NEGATIVE');
+                    } else {
+                        reject(new Error(r || 'CANCEL'));
+                    }
+                };
+
+                const res = window.Android.authenticateBiometric();
+                // If the bridge returns a definitive success immediately, resolve
+                if (res === true || res === 'true' || res === 'OK') {
+                    return resolve('SUCCESS');
+                }
+                // If it returns 'STARTED', we wait for onBiometricResult
+                if (res === 'STARTED') {
+                    // Timeout if no response
+                    setTimeout(() => reject(new Error('Biometric timeout')), 15000);
+                    return;
+                }
+                // If it returns anything else (like 'UNAVAILABLE'), reject
+                return reject(new Error('Biometric unavailable'));
+            }
+        } catch (e) { console.error('Bridge error:', e); }
+
+        // Try WebAuthn (platform authenticator)
+        try {
+            if (window.PublicKeyCredential && navigator.credentials) {
+                const challenge = new Uint8Array(32);
+                window.crypto.getRandomValues(challenge);
+                const publicKey = { challenge: challenge, timeout: 60000, userVerification: 'required' };
+                const cred = await navigator.credentials.get({ publicKey }).catch(() => null);
+                if (cred) return resolve('SUCCESS');
+            }
+        } catch (e) { }
+
+        reject(new Error('Biometric unavailable'));
+    });
 }
 
 // ── VAULT RENDER ──────────────────────────────────────────────────────────────
@@ -646,6 +722,9 @@ async function initializeApp() {
     load();
     applyTheme();
     applyEncryptToggle();
+    applyUnlockPrefUI();
+    applyPinToggle();
+    applyBioToggle();
 
     // Check if this is the first time - no PIN set and no vault data
     if (userPin === '1234' && Object.keys(vault).length === 0) {
@@ -673,14 +752,97 @@ function bootContinue() {
             document.getElementById('splash').style.display = 'none';
             if (isFirstTime) {
                 document.getElementById('screen-setup').classList.add('active');
-            } else if (pinEnabled) {
-                document.getElementById('screen-pin').classList.add('active');
-            } else {
+                return;
+            }
+
+            const openApp = () => {
+                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
                 document.getElementById('screen-main').classList.add('active');
                 renderVault();
+            };
+
+            const showLocked = (reason) => {
+                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                document.getElementById('screen-locked').classList.add('active');
+                document.getElementById('btn-bio-unlock').style.display = bioEnabled ? 'block' : 'none';
+
+                // If unlockPref is 'bio', hide PIN button from the background screen.
+                // It will only be accessible if the native prompt's "Use App PIN" is clicked (NEGATIVE result).
+                const showPinBtn = pinEnabled && (unlockPref !== 'bio' || !!reason);
+                document.getElementById('btn-pin-unlock').style.display = showPinBtn ? 'block' : 'none';
+
+                if (reason) document.getElementById('locked-sub').textContent = reason;
+                else document.getElementById('locked-sub').textContent = 'Authenticate to open';
+            };
+
+            const showPin = () => {
+                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                document.getElementById('screen-pin').classList.add('active');
+            };
+
+            // If no security enabled at all, open app
+            if (!pinEnabled && !bioEnabled) {
+                openApp();
+                return;
+            }
+
+            // Decide based on preference
+            if (unlockPref === 'bio' && bioEnabled) {
+                showLocked();
+                tryBiometricAuth().then((res) => {
+                    if (res === 'SUCCESS') openApp();
+                    else if (res === 'NEGATIVE') showPin();
+                    // if CANCEL, stay on locked screen
+                }).catch((err) => {
+                    // Bio unavailable or error - show locked screen with options
+                    if (err && err.message === 'CANCEL') showLocked();
+                    else showLocked('Biometric unavailable');
+                });
+            } else if (unlockPref === 'pin' && pinEnabled) {
+                showPin();
+            } else {
+                // 'ask' or mixed state
+                if (bioEnabled) {
+                    showLocked();
+                    tryBiometricAuth().then((res) => {
+                        if (res === 'SUCCESS') openApp();
+                        else if (res === 'NEGATIVE') showPin();
+                    }).catch((err) => {
+                        // User requested to stay on locked screen if cancelled
+                        if (err && err.message === 'CANCEL') {
+                            showLocked();
+                        } else {
+                            // If PIN is enabled, we could show PIN, but user said
+                            // "if and only if the ask pin button is clicked"
+                            showLocked('Biometric unavailable');
+                        }
+                    });
+                } else if (pinEnabled) {
+                    showPin();
+                } else {
+                    openApp();
+                }
             }
         }, 400);
-    } catch (e) { }
+    } catch (e) { console.error('Boot error:', e); }
+}
+
+function retryBio() {
+    tryBiometricAuth().then((res) => {
+        if (res === 'SUCCESS') {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('screen-main').classList.add('active');
+            renderVault();
+        } else if (res === 'NEGATIVE') {
+            switchToPin();
+        }
+    }).catch(() => { showToast('Biometric failed'); });
+}
+
+function switchToPin() {
+    if (!pinEnabled) { showToast('PIN is disabled'); return; }
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-pin').classList.add('active');
 }
 
 // Continue boot after initialization and a short delay
