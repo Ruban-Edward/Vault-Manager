@@ -14,7 +14,8 @@
     <link rel="stylesheet" href="css/tabler-icons.min.css" />
     <link rel="stylesheet" href="css/styles.css" />
     <!-- Security headers (CSP, referrer, permissions) -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
     <meta name="referrer" content="no-referrer" />
     <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), payment=()">
     <title>Vault</title>
@@ -22,327 +23,372 @@
 </head>
 
 <body>
-<div id="app">
-    <div class="toast" id="toast"></div>
+    <div id="app">
+        <div class="toast" id="toast"></div>
 
-    <!-- SPLASH -->
-    <div id="splash">
-        <div class="splash-logo"><i class="ti ti-shield-lock"></i></div>
-        <h1>Vault</h1>
-        <p>Your passwords, only yours</p>
-    </div>
-
-    <!-- SETUP PIN SCREEN (FIRST TIME) -->
-    <div id="screen-setup" class="screen">
-        <div class="pin-wrap">
-            <div class="pin-logo"><i class="ti ti-shield-lock"></i></div>
-            <div class="pin-title">Create PIN</div>
-            <div class="pin-sub">Set your 4-digit PIN to secure Vault</div>
-            <div class="pin-dots" id="setup-pins">
-                <div class="pin-dot" id="setup-d0"></div>
-                <div class="pin-dot" id="setup-d1"></div>
-                <div class="pin-dot" id="setup-d2"></div>
-                <div class="pin-dot" id="setup-d3"></div>
-            </div>
-            <div class="pin-pad">
-                <button class="pin-key" onclick="setupPinPress(1)">1</button>
-                <button class="pin-key" onclick="setupPinPress(2)">2</button>
-                <button class="pin-key" onclick="setupPinPress(3)">3</button>
-                <button class="pin-key" onclick="setupPinPress(4)">4</button>
-                <button class="pin-key" onclick="setupPinPress(5)">5</button>
-                <button class="pin-key" onclick="setupPinPress(6)">6</button>
-                <button class="pin-key" onclick="setupPinPress(7)">7</button>
-                <button class="pin-key" onclick="setupPinPress(8)">8</button>
-                <button class="pin-key" onclick="setupPinPress(9)">9</button>
-                <div></div>
-                <button class="pin-key" onclick="setupPinPress(0)">0</button>
-                <button class="pin-key" onclick="setupPinBack()"><i class="ti ti-backspace"></i></button>
-            </div>
+        <!-- SPLASH -->
+        <div id="splash">
+            <div class="splash-logo"><i class="ti ti-shield-lock"></i></div>
+            <h1>Vault</h1>
+            <p>Your passwords, only yours</p>
         </div>
-    </div>
 
-    <!-- LOCKED SCREEN (Waiting for Bio or redirect to PIN) -->
-    <div id="screen-locked" class="screen">
-        <div class="pin-wrap">
-            <div class="pin-logo"><i class="ti ti-shield-lock"></i></div>
-            <div class="pin-title">Vault is Locked</div>
-            <div class="pin-sub" id="locked-sub">Authenticate to open</div>
-            <div style="margin-top:30px; display:flex; flex-direction:column; gap:12px; width:100%; max-width:240px">
-                <button class="btn-primary" onclick="retryBio()" id="btn-bio-unlock" style="display:none; width:100%">
-                    <i class="ti ti-fingerprint"></i> Unlock with Biometric
-                </button>
-                <button class="btn-secondary" onclick="switchToPin()" id="btn-pin-unlock" style="display:none; width:100%">
-                    Use PIN
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- PIN SCREEN -->
-    <div id="screen-pin" class="screen">
-        <!-- <div class="status-bar"><span id="pin-clock">9:41</span><span>🔋</span></div> -->
-        <div class="pin-wrap">
-            <div class="pin-logo"><i class="ti ti-shield-lock"></i></div>
-            <div class="pin-title">Enter PIN</div>
-            <div class="pin-sub">Vault is locked</div>
-            <div class="pin-dots" id="pin-dots">
-                <div class="pin-dot" id="d0"></div>
-                <div class="pin-dot" id="d1"></div>
-                <div class="pin-dot" id="d2"></div>
-                <div class="pin-dot" id="d3"></div>
-            </div>
-            <div class="pin-error" id="pin-error"></div>
-            <div class="pin-pad">
-                <button class="pin-key" onclick="pinPress(1)">1</button>
-                <button class="pin-key" onclick="pinPress(2)">2</button>
-                <button class="pin-key" onclick="pinPress(3)">3</button>
-                <button class="pin-key" onclick="pinPress(4)">4</button>
-                <button class="pin-key" onclick="pinPress(5)">5</button>
-                <button class="pin-key" onclick="pinPress(6)">6</button>
-                <button class="pin-key" onclick="pinPress(7)">7</button>
-                <button class="pin-key" onclick="pinPress(8)">8</button>
-                <button class="pin-key" onclick="pinPress(9)">9</button>
-                <div></div>
-                <button class="pin-key" onclick="pinPress(0)">0</button>
-                <button class="pin-key" onclick="pinBack()"><i class="ti ti-backspace"></i></button>
-            </div>
-        </div>
-    </div>
-
-    <!-- MAIN SCREEN -->
-    <div id="screen-main" class="screen">
-        <!-- <div class="status-bar"><span id="main-clock">9:41</span><span>🔋</span></div> -->
-
-        <!-- VAULT TAB -->
-        <div id="tab-vault" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
-            <div class="top-bar">
-                <h1>Vault</h1>
-                <button class="btn-icon" onclick="showTab('settings')" aria-label="Settings"><i
-                        class="ti ti-settings"></i></button>
-            </div>
-            <div class="content" id="vault-content">
-                <div class="stats-row" id="stats-row"></div>
-                <div class="search-wrap">
-                    <i class="ti ti-search search-icon"></i>
-                    <input class="search-inp" type="search" placeholder="Search sites..." id="searchInput"
-                           oninput="renderVault()" />
+        <!-- SETUP PIN SCREEN (FIRST TIME) -->
+        <div id="screen-setup" class="screen">
+            <div class="pin-wrap">
+                <div class="pin-logo"><i class="ti ti-shield-lock"></i></div>
+                <div class="pin-title">Create PIN</div>
+                <div class="pin-sub">Set your 4-digit PIN to secure Vault</div>
+                <div class="pin-dots" id="setup-pins">
+                    <div class="pin-dot" id="setup-d0"></div>
+                    <div class="pin-dot" id="setup-d1"></div>
+                    <div class="pin-dot" id="setup-d2"></div>
+                    <div class="pin-dot" id="setup-d3"></div>
                 </div>
-                <div class="filter-row" id="filter-row"></div>
-                <div id="vault-list"></div>
-            </div>
-            <button class="fab" onclick="openAddSite()" aria-label="Add"><i class="ti ti-plus"></i></button>
-        </div>
-
-        <!-- NOTES TAB -->
-        <div id="tab-notes" style="display:none;flex-direction:column;flex:1;overflow:hidden">
-            <div class="top-bar">
-                <h1>Notes</h1>
-                <button class="btn-icon" onclick="showTab('settings')" aria-label="Settings"><i
-                        class="ti ti-settings"></i></button>
-            </div>
-            <div class="content">
-                <div id="notes-list"></div>
-            </div>
-            <button class="fab" onclick="openAddNote()" aria-label="Add note"><i class="ti ti-plus"></i></button>
-        </div>
-
-        <!-- SETTINGS TAB -->
-        <div id="tab-settings" style="display:none;flex-direction:column;flex:1;overflow:hidden">
-            <div class="top-settings">
-                <h1>Settings</h1>
-            </div>
-            <div class="content">
-                <div class="section-lbl">Security</div>
-                <div class="card" style="padding:0 14px">
-                    <div class="setting-row">
-                        <i class="ti ti-lock" style="font-size:22px;color:var(--ac)"></i>
-                        <div class="setting-info">
-                            <div class="setting-title">PIN lock</div>
-                            <div class="setting-sub">Require PIN to open Vault</div>
-                        </div>
-                        <button class="toggle on" id="toggle-pin" onclick="togglePinSetting()">
-                            <div class="toggle-knob"></div>
-                        </button>
-                    </div>
-                    <div class="setting-row">
-                        <i class="ti ti-fingerprint" style="font-size:22px;color:var(--ac)"></i>
-                        <div class="setting-info">
-                            <div class="setting-title">Biometric unlock</div>
-                            <div class="setting-sub">Fingerprint or Face ID</div>
-                        </div>
-                        <button class="toggle" id="toggle-bio" onclick="toggleBio()">
-                            <div class="toggle-knob"></div>
-                        </button>
-                    </div>
-                    <div class="setting-row">
-                        <i class="ti ti-switch-horizontal" style="font-size:22px;color:var(--ac)"></i>
-                        <div class="setting-info">
-                            <div class="setting-title">Default unlock</div>
-                            <div class="setting-sub">Choose PIN, Biometric, or Ask on open</div>
-                        </div>
-                        <select id="unlock-pref" onchange="setUnlockPref(this.value)" class="unlock-pref-select">
-                            <option value="ask">Ask</option>
-                            <option value="pin">PIN</option>
-                            <option value="bio">Biometric</option>
-                        </select>
-                    </div>
-                    <div class="setting-row">
-                        <i class="ti ti-sun" style="font-size:22px;color:var(--ac)"></i>
-                        <div class="setting-info">
-                            <div class="setting-title">Theme</div>
-                            <div class="setting-sub">Dark / Light</div>
-                        </div>
-                        <button class="toggle" id="toggle-theme" onclick="toggleTheme()">
-                            <div class="toggle-knob"></div>
-                        </button>
-                    </div>
-                    <div class="setting-row">
-                        <i class="ti ti-lock" style="font-size:22px;color:var(--ac)"></i>
-                        <div class="setting-info">
-                            <div class="setting-title">Encrypt local data</div>
-                            <div class="setting-sub">Store vault encrypted on this device</div>
-                        </div>
-                        <button class="toggle" id="toggle-encrypt" onclick="toggleEncrypt()">
-                            <div class="toggle-knob"></div>
-                        </button>
-                    </div>
-                    <div class="setting-row" style="border:none">
-                        <i class="ti ti-key" style="font-size:22px;color:var(--ac)"></i>
-                        <div class="setting-info">
-                            <div class="setting-title">Change PIN</div>
-                            <div class="setting-sub">Update your 4-digit PIN</div>
-                        </div>
-                        <button class="btn-sm" onclick="openChangePin()"><i
-                                class="ti ti-chevron-right"></i></button>
-                    </div>
-                </div>
-
-                <div class="section-lbl">Backup</div>
-                <div class="export-section">
-                    <div class="export-title">Export backup</div>
-                    <div class="export-desc">Downloads an encrypted local backup of all passwords and notes. Only
-                        you can restore it.</div>
-                    <button class="export-btn" onclick="exportData()"><i class="ti ti-download"></i> Export .vlt
-                        file</button>
-                </div>
-                <div class="export-section">
-                    <div class="export-title">Import backup</div>
-                    <div class="export-desc">Restore from a previously exported .vlt backup file.</div>
-                    <label class="export-btn" style="cursor:pointer"><i class="ti ti-upload"></i> Choose .vlt file
-                        <input type="file" accept=".vlt" style="display:none"
-                               onchange="importData(event)" /></label>
-                </div>
-
-                <div class="section-lbl">About</div>
-                <div class="card" style="padding:14px">
-                    <div style="font-size:13px;color:var(--text2);line-height:1.7">
-                        <strong style="color:var(--text);font-size:14px">Vault v2.0</strong><br>
-                        All data is saved only on this device. No internet is used. Nothing is ever sent to any
-                        server or cloud.
-                    </div>
+                <div class="pin-pad">
+                    <button class="pin-key" onclick="setupPinPress(1)">1</button>
+                    <button class="pin-key" onclick="setupPinPress(2)">2</button>
+                    <button class="pin-key" onclick="setupPinPress(3)">3</button>
+                    <button class="pin-key" onclick="setupPinPress(4)">4</button>
+                    <button class="pin-key" onclick="setupPinPress(5)">5</button>
+                    <button class="pin-key" onclick="setupPinPress(6)">6</button>
+                    <button class="pin-key" onclick="setupPinPress(7)">7</button>
+                    <button class="pin-key" onclick="setupPinPress(8)">8</button>
+                    <button class="pin-key" onclick="setupPinPress(9)">9</button>
+                    <div></div>
+                    <button class="pin-key" onclick="setupPinPress(0)">0</button>
+                    <button class="pin-key" onclick="setupPinBack()"><i class="ti ti-backspace"></i></button>
                 </div>
             </div>
         </div>
 
-        <div class="bottom-nav">
-            <button class="nav-btn active" id="nav-vault" onclick="showTab('vault')"><i
-                    class="ti ti-shield-lock"></i>Vault</button>
-            <button class="nav-btn" id="nav-notes" onclick="showTab('notes')"><i
-                    class="ti ti-notes"></i>Notes</button>
-            <button class="nav-btn" id="nav-settings" onclick="showTab('settings')"><i
-                    class="ti ti-settings"></i>Settings</button>
-        </div>
-    </div>
-
-    <!-- MODALS -->
-    <div class="modal-overlay hidden" id="modal-entry" onclick="closeModal('modal-entry')">
-        <div class="modal-sheet" onclick="event.stopPropagation()">
-            <div class="modal-handle"></div>
-            <div class="modal-title" id="modal-entry-title">Add site</div>
-            <div class="field-label">Site name</div>
-            <input class="field-input" type="text" id="inp-site" placeholder="e.g. Instagram" autocomplete="off" />
-            <div class="field-label">Category</div>
-            <div class="cat-tags" id="cat-selector"></div>
-            <div class="field-label">Username / Email</div>
-            <input class="field-input" type="text" id="inp-user" placeholder="e.g. personal@email.com"
-                   autocomplete="off" autocapitalize="none" />
-            <div class="field-label">Password</div>
-            <div class="field-row">
-                <input class="field-input" type="password" id="inp-pass" placeholder="Enter password"
-                       autocomplete="new-password" oninput="updateStrength()" />
-                <button class="pass-toggle" onclick="toggleModalPass()" id="modal-pass-btn"><i
-                        class="ti ti-eye"></i></button>
+        <!-- LOCKED SCREEN (Waiting for Bio or redirect to PIN) -->
+        <div id="screen-locked" class="screen">
+            <div class="pin-wrap">
+                <div class="pin-logo"><i class="ti ti-shield-lock"></i></div>
+                <div class="pin-title">Vault is Locked</div>
+                <div class="pin-sub" id="locked-sub">Authenticate to open</div>
+                <div
+                    style="margin-top:30px; display:flex; flex-direction:column; gap:12px; width:100%; max-width:240px">
+                    <button class="btn-primary" onclick="retryBio()" id="btn-bio-unlock"
+                        style="display:none; width:100%">
+                        <i class="ti ti-fingerprint"></i> Unlock with Biometric
+                    </button>
+                    <button class="btn-secondary" onclick="switchToPin()" id="btn-pin-unlock"
+                        style="display:none; width:100%">
+                        Use PIN
+                    </button>
+                </div>
             </div>
-            <div class="str-track">
-                <div id="str-bar" class="str-bar"></div>
-            </div>
-            <div id="str-label" class="str-label">Enter a password</div>
-            <button class="btn-primary" onclick="saveEntry()">Save</button>
-            <button class="btn-secondary" onclick="closeModal('modal-entry')">Cancel</button>
         </div>
-    </div>
 
-    <div class="modal-overlay hidden" id="modal-note" onclick="closeModal('modal-note')">
-        <div class="modal-sheet" onclick="event.stopPropagation()">
-            <div class="modal-handle"></div>
-            <div class="modal-title" id="modal-note-title">New note</div>
-            <div class="field-label">Title</div>
-            <input class="field-input" type="text" id="inp-note-title" placeholder="Note title" />
-            <div class="field-label">Content</div>
-            <textarea class="note-textarea" id="inp-note-body" placeholder="Write your note here..."></textarea>
-            <button class="btn-primary" onclick="saveNote()">Save note</button>
-            <button class="btn-secondary" onclick="closeModal('modal-note')">Cancel</button>
-        </div>
-    </div>
-
-    <div class="modal-overlay hidden" id="modal-confirm">
-        <div class="modal-sheet">
-            <div class="modal-handle"></div>
-            <div class="modal-title" id="confirm-title">Remove this?</div>
-            <p style="font-size:13px;color:var(--text2);margin-bottom:18px" id="confirm-sub">This action cannot be
-                undone.</p>
-            <button class="btn-primary" style="background:#A32D2D" onclick="confirmDelete()">Remove</button>
-            <button class="btn-secondary" onclick="closeModal('modal-confirm')">Cancel</button>
-        </div>
-    </div>
-
-    <div class="modal-overlay hidden" id="modal-changepin" onclick="closeModal('modal-changepin')">
-        <div class="modal-sheet" onclick="event.stopPropagation()">
-            <div class="modal-handle"></div>
-            <div class="modal-title">Change PIN</div>
-            <p style="font-size:13px;color:var(--text2);margin-bottom:16px">Enter your new 4-digit PIN</p>
-            <div style="display:flex;gap:16px;justify-content:center;margin-bottom:18px">
-                <div class="pin-dot" id="cd0"></div>
-                <div class="pin-dot" id="cd1"></div>
-                <div class="pin-dot" id="cd2"></div>
-                <div class="pin-dot" id="cd3"></div>
+        <!-- PIN SCREEN -->
+        <div id="screen-pin" class="screen">
+            <!-- <div class="status-bar"><span id="pin-clock">9:41</span><span>🔋</span></div> -->
+            <div class="pin-wrap">
+                <div class="pin-logo"><i class="ti ti-shield-lock"></i></div>
+                <div class="pin-title">Enter PIN</div>
+                <div class="pin-sub">Vault is locked</div>
+                <div class="pin-dots" id="pin-dots">
+                    <div class="pin-dot" id="d0"></div>
+                    <div class="pin-dot" id="d1"></div>
+                    <div class="pin-dot" id="d2"></div>
+                    <div class="pin-dot" id="d3"></div>
+                </div>
+                <div class="pin-error" id="pin-error"></div>
+                <div class="pin-pad">
+                    <button class="pin-key" onclick="pinPress(1)">1</button>
+                    <button class="pin-key" onclick="pinPress(2)">2</button>
+                    <button class="pin-key" onclick="pinPress(3)">3</button>
+                    <button class="pin-key" onclick="pinPress(4)">4</button>
+                    <button class="pin-key" onclick="pinPress(5)">5</button>
+                    <button class="pin-key" onclick="pinPress(6)">6</button>
+                    <button class="pin-key" onclick="pinPress(7)">7</button>
+                    <button class="pin-key" onclick="pinPress(8)">8</button>
+                    <button class="pin-key" onclick="pinPress(9)">9</button>
+                    <div></div>
+                    <button class="pin-key" onclick="pinPress(0)">0</button>
+                    <button class="pin-key" onclick="pinBack()"><i class="ti ti-backspace"></i></button>
+                </div>
             </div>
-            <div class="pin-pad" style="margin:0 auto 0">
-                <button class="pin-key" onclick="cpinPress(1)">1</button>
-                <button class="pin-key" onclick="cpinPress(2)">2</button>
-                <button class="pin-key" onclick="cpinPress(3)">3</button>
-                <button class="pin-key" onclick="cpinPress(4)">4</button>
-                <button class="pin-key" onclick="cpinPress(5)">5</button>
-                <button class="pin-key" onclick="cpinPress(6)">6</button>
-                <button class="pin-key" onclick="cpinPress(7)">7</button>
-                <button class="pin-key" onclick="cpinPress(8)">8</button>
-                <button class="pin-key" onclick="cpinPress(9)">9</button>
-                <div></div>
-                <button class="pin-key" onclick="cpinPress(0)">0</button>
-                <button class="pin-key" onclick="cpinBack()"><i class="ti ti-backspace"></i></button>
+        </div>
+
+        <!-- MAIN SCREEN -->
+        <div id="screen-main" class="screen">
+            <!-- <div class="status-bar"><span id="main-clock">9:41</span><span>🔋</span></div> -->
+
+            <!-- VAULT TAB -->
+            <div id="tab-vault" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
+                <div class="top-bar">
+                    <h1>Vault</h1>
+                    <button class="btn-icon" onclick="showTab('settings')" aria-label="Settings"><i
+                            class="ti ti-settings"></i></button>
+                </div>
+                <div class="content" id="vault-content">
+                    <div class="stats-row" id="stats-row"></div>
+                    <div class="search-wrap">
+                        <i class="ti ti-search search-icon"></i>
+                        <input class="search-inp" type="search" placeholder="Search sites..." id="searchInput"
+                            oninput="renderVault()" />
+                    </div>
+                    <div class="filter-row" id="filter-row"></div>
+                    <div id="vault-list"></div>
+                </div>
+                <button class="fab" onclick="openAddSite()" aria-label="Add"><i class="ti ti-plus"></i></button>
             </div>
-            <button class="btn-secondary" onclick="closeModal('modal-changepin')"
+
+            <!-- NOTES TAB -->
+            <div id="tab-notes" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+                <div class="top-bar">
+                    <h1>Notes</h1>
+                    <button class="btn-icon" onclick="showTab('settings')" aria-label="Settings"><i
+                            class="ti ti-settings"></i></button>
+                </div>
+                <div class="content">
+                    <div id="notes-list"></div>
+                </div>
+                <button class="fab" onclick="openAddNote()" aria-label="Add note"><i class="ti ti-plus"></i></button>
+            </div>
+
+            <!-- SETTINGS TAB -->
+            <div id="tab-settings" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+                <div class="top-settings">
+                    <h1>Settings</h1>
+                </div>
+                <div class="content">
+                    <div class="section-lbl">Security</div>
+                    <div class="card" style="padding:0 14px">
+                        <div class="setting-row">
+                            <i class="ti ti-lock" style="font-size:22px;color:var(--ac)"></i>
+                            <div class="setting-info">
+                                <div class="setting-title">PIN lock</div>
+                                <div class="setting-sub">Require PIN to open Vault</div>
+                            </div>
+                            <button class="toggle on" id="toggle-pin" onclick="togglePinSetting()">
+                                <div class="toggle-knob"></div>
+                            </button>
+                        </div>
+                        <div class="setting-row">
+                            <i class="ti ti-fingerprint" style="font-size:22px;color:var(--ac)"></i>
+                            <div class="setting-info">
+                                <div class="setting-title">Biometric unlock</div>
+                                <div class="setting-sub">Fingerprint or Face ID</div>
+                            </div>
+                            <button class="toggle" id="toggle-bio" onclick="toggleBio()">
+                                <div class="toggle-knob"></div>
+                            </button>
+                        </div>
+                        <div class="setting-row">
+                            <i class="ti ti-switch-horizontal" style="font-size:22px;color:var(--ac)"></i>
+                            <div class="setting-info">
+                                <div class="setting-title">Default unlock</div>
+                                <div class="setting-sub">Choose PIN, Biometric, or Ask on open</div>
+                            </div>
+                            <select id="unlock-pref" onchange="setUnlockPref(this.value)" class="unlock-pref-select">
+                                <option value="ask">Ask</option>
+                                <option value="pin">PIN</option>
+                                <option value="bio">Biometric</option>
+                            </select>
+                        </div>
+                        <div class="setting-row">
+                            <i class="ti ti-sun" style="font-size:22px;color:var(--ac)"></i>
+                            <div class="setting-info">
+                                <div class="setting-title">Theme</div>
+                                <div class="setting-sub">Dark / Light</div>
+                            </div>
+                            <button class="toggle" id="toggle-theme" onclick="toggleTheme()">
+                                <div class="toggle-knob"></div>
+                            </button>
+                        </div>
+                        <div class="setting-row">
+                            <i class="ti ti-lock" style="font-size:22px;color:var(--ac)"></i>
+                            <div class="setting-info">
+                                <div class="setting-title">Encrypt local data</div>
+                                <div class="setting-sub">Store vault encrypted on this device</div>
+                            </div>
+                            <button class="toggle" id="toggle-encrypt" onclick="toggleEncrypt()">
+                                <div class="toggle-knob"></div>
+                            </button>
+                        </div>
+                        <div class="setting-row" style="border:none">
+                            <i class="ti ti-key" style="font-size:22px;color:var(--ac)"></i>
+                            <div class="setting-info">
+                                <div class="setting-title">Change PIN</div>
+                                <div class="setting-sub">Update your 4-digit PIN</div>
+                            </div>
+                            <button class="btn-sm" onclick="openChangePin()"><i
+                                    class="ti ti-chevron-right"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="section-lbl">Backup</div>
+                    <div class="export-section">
+                        <div class="export-title">Export backup</div>
+                        <div class="export-desc">Downloads an encrypted local backup of all passwords and notes. Only
+                            you can restore it.</div>
+                        <button class="export-btn" onclick="exportData()"><i class="ti ti-download"></i> Export .vlt
+                            file</button>
+                    </div>
+                    <div class="export-section">
+                        <div class="export-title">Import backup</div>
+                        <div class="export-desc">Restore from a previously exported .vlt backup file.</div>
+                        <label class="export-btn" style="cursor:pointer"><i class="ti ti-upload"></i> Choose .vlt file
+                            <input type="file" accept=".vlt" style="display:none"
+                                onchange="importData(event)" /></label>
+                    </div>
+
+                    <div class="section-lbl">About</div>
+                    <div class="card" style="padding:14px">
+                        <div style="font-size:13px;color:var(--text2);line-height:1.7">
+                            <strong style="color:var(--text);font-size:14px">Vault v2.0</strong><br>
+                            All data is saved only on this device. No internet is used. Nothing is ever sent to any
+                            server or cloud.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bottom-nav">
+                <button class="nav-btn active" id="nav-vault" onclick="showTab('vault')"><i
+                        class="ti ti-shield-lock"></i>Vault</button>
+                <button class="nav-btn" id="nav-notes" onclick="showTab('notes')"><i
+                        class="ti ti-notes"></i>Notes</button>
+                <button class="nav-btn" id="nav-settings" onclick="showTab('settings')"><i
+                        class="ti ti-settings"></i>Settings</button>
+            </div>
+        </div>
+
+        <!-- MODALS -->
+        <div class="modal-overlay hidden" id="modal-entry" onclick="closeModal('modal-entry')">
+            <div class="modal-sheet" onclick="event.stopPropagation()">
+                <div class="modal-handle"></div>
+                <div class="modal-title" id="modal-entry-title">Add site</div>
+                <div class="field-label">Site name</div>
+                <input class="field-input" type="text" id="inp-site" placeholder="e.g. Instagram" autocomplete="off" />
+                <div class="field-label">Category</div>
+                <div class="cat-tags" id="cat-selector"></div>
+                <div class="field-label">Username / Email</div>
+                <input class="field-input" type="text" id="inp-user" placeholder="e.g. personal@email.com"
+                    autocomplete="off" autocapitalize="none" />
+                <div class="field-label">Password</div>
+                <div class="field-row">
+                    <input class="field-input" type="password" id="inp-pass" placeholder="Enter password"
+                        autocomplete="new-password" oninput="updateStrength()" />
+                    <button class="pass-toggle" onclick="toggleModalPass()" id="modal-pass-btn"><i
+                            class="ti ti-eye"></i></button>
+                </div>
+                <div class="str-track">
+                    <div id="str-bar" class="str-bar"></div>
+                </div>
+                <div id="str-label" class="str-label">Enter a password</div>
+                <button class="btn-primary" onclick="saveEntry()">Save</button>
+                <button class="btn-secondary" onclick="closeModal('modal-entry')">Cancel</button>
+            </div>
+        </div>
+
+        <div id="screen-note" class="screen note-screen" style="display:none;flex-direction:column;">
+            <div class="top-bar note-top-bar">
+                <button class="btn-icon" onclick="closeNotePage()" aria-label="Back"><i
+                        class="ti ti-chevron-left"></i></button>
+                <div id="note-header-title" class="note-header-title">Note</div>
+                <button class="btn-sm note-save-btn" id="note-save-btn" onclick="saveNote()">Save</button>
+            </div>
+            <div class="content note-content">
+                <div class="note-panel">
+                    <div id="note-view-mode" class="note-view-mode" style="display:none;">
+                        <div class="note-view-header">
+                            <div id="note-view-title" class="note-view-title"></div>
+                            <div class="note-date" id="note-view-date"></div>
+                        </div>
+                        <div class="note-view-scroll">
+                            <div class="note-label">Content</div>
+                            <div id="note-view-body" class="note-view-body"></div>
+                        </div>
+                        <div class="notes-button note-actions-footer">
+                            <div class="note-actions">
+                                <button class="btn-md note-action-btn" onclick="deleteNoteConfirm()"><i
+                                        class="ti ti-trash"></i></button>
+                                <button class="btn-md note-action-btn" onclick="copyNote()"><i
+                                        class="ti ti-copy"></i></button>
+                                <button class="btn-md note-action-btn" onclick="shareNote()"><i
+                                        class="ti ti-share"></i></button>
+                                <button class="btn-md note-action-btn" onclick="enterNoteEditMode()"><i
+                                        class="ti ti-edit"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="note-edit-mode" class="note-edit-mode">
+                        <div class="note-edit-header">
+                            <input class="field-input-notes" type="text" id="inp-note-title" placeholder="Note Title" />
+                        </div>
+                        <div class="note-edit-scroll">
+                            <div class="note-label">Content</div>
+                            <textarea class="note-textarea" id="inp-note-body"
+                                placeholder="Write your note here..."></textarea>
+                        </div>
+                        <div class="notes-button note-actions-footer">
+                            <div class="note-actions">
+                                <button class="btn-md note-action-btn" onclick="deleteNoteConfirm()"
+                                    id="edit-note-delete-btn"><i class="ti ti-trash"></i></button>
+                                <button class="btn-md note-action-btn" onclick="shareNote()" id="edit-note-share-btn"><i
+                                        class="ti ti-share"></i></button>
+                                <button class="btn-md note-action-btn" id="note-save-btn" onclick="saveNote()"><i
+                                        class="ti ti-device-floppy"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-overlay hidden" id="modal-confirm">
+            <div class="modal-sheet">
+                <div class="modal-handle"></div>
+                <div class="modal-title" id="confirm-title">Remove this?</div>
+                <p style="font-size:13px;color:var(--text2);margin-bottom:18px" id="confirm-sub">This action cannot be
+                    undone.</p>
+                <button class="btn-primary" style="background:#A32D2D" onclick="confirmDelete()">Remove</button>
+                <button class="btn-secondary" onclick="closeModal('modal-confirm')">Cancel</button>
+            </div>
+        </div>
+
+        <div class="modal-overlay hidden" id="modal-changepin" onclick="closeModal('modal-changepin')">
+            <div class="modal-sheet" onclick="event.stopPropagation()">
+                <div class="modal-handle"></div>
+                <div class="modal-title">Change PIN</div>
+                <p style="font-size:13px;color:var(--text2);margin-bottom:16px">Enter your new 4-digit PIN</p>
+                <div style="display:flex;gap:16px;justify-content:center;margin-bottom:18px">
+                    <div class="pin-dot" id="cd0"></div>
+                    <div class="pin-dot" id="cd1"></div>
+                    <div class="pin-dot" id="cd2"></div>
+                    <div class="pin-dot" id="cd3"></div>
+                </div>
+                <div class="pin-pad" style="margin:0 auto 0">
+                    <button class="pin-key" onclick="cpinPress(1)">1</button>
+                    <button class="pin-key" onclick="cpinPress(2)">2</button>
+                    <button class="pin-key" onclick="cpinPress(3)">3</button>
+                    <button class="pin-key" onclick="cpinPress(4)">4</button>
+                    <button class="pin-key" onclick="cpinPress(5)">5</button>
+                    <button class="pin-key" onclick="cpinPress(6)">6</button>
+                    <button class="pin-key" onclick="cpinPress(7)">7</button>
+                    <button class="pin-key" onclick="cpinPress(8)">8</button>
+                    <button class="pin-key" onclick="cpinPress(9)">9</button>
+                    <div></div>
+                    <button class="pin-key" onclick="cpinPress(0)">0</button>
+                    <button class="pin-key" onclick="cpinBack()"><i class="ti ti-backspace"></i></button>
+                </div>
+                <button class="btn-secondary" onclick="closeModal('modal-changepin')"
                     style="margin-top:16px">Cancel</button>
+            </div>
         </div>
     </div>
-</div>
 
-<script src="js/app.js"></script>
-<script>
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/service-worker.js');
-    }
-</script>
+    <script src="js/app.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/service-worker.js');
+        }
+    </script>
 </body>
 
 </html>

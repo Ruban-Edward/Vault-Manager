@@ -30,6 +30,7 @@ let pinInput = '';
 let cpinInput = '';
 let setupPinInput = '';
 let editingNoteIdx = null;
+let noteMode = 'view';
 let theme = 'dark';
 let encryptionEnabled = false;
 let isFirstTime = false;
@@ -550,6 +551,9 @@ function deleteNote(i) {
     document.getElementById('confirm-sub').textContent = 'This will permanently delete the note.';
     document.getElementById('modal-confirm').classList.remove('hidden');
 }
+function deleteNoteConfirm() {
+    deleteNote(editingNoteIdx);
+}
 function confirmDelete() {
     if (deletingType === 'entry') {
         const { site, i } = deletingKey;
@@ -557,50 +561,126 @@ function confirmDelete() {
         if (vault[site].length === 0) { delete vault[site]; openSites.delete(site); }
         showToast('Removed'); renderVault();
     } else if (deletingType === 'note') {
-        notes.splice(deletingKey, 1); showToast('Note removed'); renderNotes(); renderStats();
+        notes.splice(deletingKey, 1);
+        showToast('Note removed');
+        renderNotes();
+        renderStats();
+        if (document.getElementById('screen-note').style.display !== 'none') {
+            closeNotePage();
+        }
     }
     deletingKey = null; save(); closeModal('modal-confirm');
 }
 
 // ── NOTES ─────────────────────────────────────────────────────────────────────
+function updateNoteActionButtons() {
+    const editDelete = document.getElementById('edit-note-delete-btn');
+    const editShare = document.getElementById('edit-note-share-btn');
+    const canAction = editingNoteIdx !== null;
+    if (editDelete) editDelete.style.display = canAction ? 'inline-flex' : 'none';
+    if (editShare) editShare.style.display = canAction ? 'inline-flex' : 'none';
+}
+
+function showNotePage(mode) {
+    noteMode = mode;
+    document.getElementById('screen-main').style.display = 'none';
+    document.getElementById('screen-note').style.display = 'flex';
+    document.getElementById('note-view-mode').style.display = mode === 'view' ? 'flex' : 'none';
+    document.getElementById('note-edit-mode').style.display = mode === 'edit' ? 'flex' : 'none';
+    const header = document.getElementById('note-header-title');
+    if (header) header.textContent = mode === 'edit' ? 'Edit note' : 'View note';
+    const saveBtn = document.getElementById('note-save-btn');
+    if (saveBtn) {
+        saveBtn.disabled = mode === 'view';
+        saveBtn.style.opacity = mode === 'view' ? '0.5' : '1';
+    }
+    updateNoteActionButtons();
+}
+
+function closeNotePage() {
+    document.getElementById('screen-note').style.display = 'none';
+    document.getElementById('screen-main').style.display = 'flex';
+    showTab('notes');
+}
+
+function openAddNote() {
+    editingNoteIdx = null;
+    document.getElementById('inp-note-title').value = '';
+    document.getElementById('inp-note-body').value = '';
+    document.getElementById('note-view-title').textContent = '';
+    document.getElementById('note-view-body').textContent = '';
+    document.getElementById('note-view-date').textContent = '';
+    showNotePage('edit');
+    setTimeout(() => document.getElementById('inp-note-title').focus(), 100);
+}
+
+function openViewNote(i) {
+    editingNoteIdx = i;
+    const note = notes[i] || { title: '', body: '', date: '' };
+    document.getElementById('note-view-title').textContent = note.title || 'Untitled';
+    document.getElementById('note-view-body').textContent = note.body || 'No content';
+    document.getElementById('note-view-date').textContent = note.date || '';
+    showNotePage('view');
+}
+
+function enterNoteEditMode(i = editingNoteIdx) {
+    if (i == null) return;
+    editingNoteIdx = i;
+    const note = notes[i] || { title: '', body: '' };
+    document.getElementById('inp-note-title').value = note.title;
+    document.getElementById('inp-note-body').value = note.body;
+    showNotePage('edit');
+    setTimeout(() => {
+        document.getElementById('inp-note-title').focus();
+    }, 100);
+}
+
+function saveNote() {
+    if (noteMode !== 'edit') return;
+    const title = document.getElementById('inp-note-title').value.trim();
+    const body = document.getElementById('inp-note-body').value.trim();
+    if (!title && !body) { showToast('Note is empty'); return; }
+    const now = new Date().toLocaleDateString('en-IN', {
+        day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true
+    }).replace(',', ' |').replace(/\b(am|pm)\b/i, match => match.toUpperCase());
+    if (editingNoteIdx !== null) {
+        notes[editingNoteIdx] = { title, body, date: now };
+        showToast('Note updated');
+    } else {
+        notes.push({ title, body, date: now });
+        editingNoteIdx = notes.length - 1;
+        showToast('Note saved');
+    }
+    save(); renderNotes(); renderStats();
+    openViewNote(editingNoteIdx);
+}
+
+function copyNote() {
+    if (editingNoteIdx === null) return;
+    const note = notes[editingNoteIdx];
+    const text = `${note.title}\n\n${note.body}`;
+    navigator.clipboard?.writeText(text).then(() => showToast('Note copied')).catch(() => showToast('Copy failed'));
+}
+
 function renderNotes() {
     const list = document.getElementById('notes-list'); if (!list) return;
     if (notes.length === 0) {
         list.innerHTML = `<div class="empty-state"><div class="empty-icon"><i class="ti ti-notes"></i></div><div class="empty-title">No notes yet</div><div class="empty-sub">Tap + to write your first note</div></div>`;
         return;
     }
-    list.innerHTML = notes.map((n, i) => `<div class="note-card" onclick="openEditNote(${i})">
+    list.innerHTML = notes.map((n, i) => `<div class="note-card" onclick="openViewNote(${i})">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
       <div class="note-title">${esc(n.title || 'Untitled')}</div>
-      <button class="btn-sm danger" onclick="event.stopPropagation();deleteNote(${i})" style="flex-shrink:0"><i class="ti ti-trash"></i></button>
     </div>
-    <div class="note-preview">${esc(n.body || 'No content')}</div>
-    <div class="note-date">${n.date}</div>
+    <div class="note-preview">
+      <div class="body">${esc(n.body || 'No content')}</div>
+      <div class="actions">
+        <button class="btn-sm" onclick="event.stopPropagation();enterNoteEditMode(${i})" style="flex-shrink:0"><i class="ti ti-edit"></i></button>
+        <button class="btn-sm danger" onclick="event.stopPropagation();deleteNote(${i})" style="flex-shrink:0"><i class="ti ti-trash"></i></button>
+      </div>
+    </div>
+    <div class="note-date-list">${n.date}</div>
   </div>`).join('');
-}
-function openAddNote() {
-    editingNoteIdx = null;
-    document.getElementById('inp-note-title').value = '';
-    document.getElementById('inp-note-body').value = '';
-    document.getElementById('modal-note-title').textContent = 'New note';
-    document.getElementById('modal-note').classList.remove('hidden');
-    setTimeout(() => document.getElementById('inp-note-title').focus(), 100);
-}
-function openEditNote(i) {
-    editingNoteIdx = i;
-    document.getElementById('inp-note-title').value = notes[i].title;
-    document.getElementById('inp-note-body').value = notes[i].body;
-    document.getElementById('modal-note-title').textContent = 'Edit note';
-    document.getElementById('modal-note').classList.remove('hidden');
-}
-function saveNote() {
-    const title = document.getElementById('inp-note-title').value.trim();
-    const body = document.getElementById('inp-note-body').value.trim();
-    if (!title && !body) { showToast('Note is empty'); return; }
-    const now = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-    if (editingNoteIdx !== null) { notes[editingNoteIdx] = { title, body, date: now }; showToast('Note updated'); }
-    else { notes.push({ title, body, date: now }); showToast('Note saved'); }
-    closeModal('modal-note'); save(); renderNotes(); renderStats();
 }
 
 // ── EXPORT / IMPORT ───────────────────────────────────────────────────────────
@@ -715,6 +795,39 @@ function setupPinPress(n) {
 function setupPinBack() {
     setupPinInput = setupPinInput.slice(0, -1);
     updateDots('setup-pins', 'setup-d', setupPinInput);
+}
+
+async function shareNote() {
+    if (editingNoteIdx === null) return;
+    const note = notes[editingNoteIdx];
+    const text = `${note.title}\n\n${note.body}`;
+
+    // 1. Try Android Native Bridge first (most reliable on mobile)
+    try {
+        if (window.Android && typeof window.Android.shareText === 'function') {
+            window.Android.shareText(text);
+            return;
+        }
+    } catch (e) { console.error('Bridge share error:', e); }
+
+    // 2. Try Web Share API (fallback)
+    try {
+        if (navigator.share) {
+            await navigator.share({
+                title: note.title || "My Note",
+                text: text
+            });
+            return;
+        }
+    } catch (e) { console.error('Web share error:', e); }
+
+    // 3. Last fallback: Copy to clipboard
+    try {
+        await navigator.clipboard.writeText(text);
+        showToast("Note copied to clipboard!");
+    } catch (e) {
+        showToast("Share failed");
+    }
 }
 
 // ── BOOT ──────────────────────────────────────────────────────────────────────

@@ -85,5 +85,14 @@ class MainActivity : AppCompatActivity() {
             }
             return "STARTED"
         }
+
+        @JavascriptInterface
+        fun shareText(text: String) {
+            val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(android.content.Intent.EXTRA_TEXT, text)
+            }
+            activity.startActivity(android.content.Intent.createChooser(intent, "Share via"))
+        }
     }
 }
