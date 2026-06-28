@@ -103,19 +103,6 @@ Testing includes:
 
 ---
 
-## 🛠️ Future Improvements
-
-Planned improvements:
-
-* 🔒 Advanced encryption enhancements.
-* 👆 Biometric authentication.
-* 💾 Secure backup and restore.
-* 🎨 User interface improvements.
-* 📂 Password import/export functionality.
-* 🔍 Password strength analysis.
-
----
-
 ## 🤝 Contribution
 
 Contributions, suggestions, and security feedback are welcome.
