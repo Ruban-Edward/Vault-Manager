@@ -1,4 +1,4 @@
-# 🔐 Password Manager & Secure Notes 
+# 🔐 Password Manager & Secure Notes
 
 A privacy-focused mobile application for securely managing passwords and storing personal notes.
 
